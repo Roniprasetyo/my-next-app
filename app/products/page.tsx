@@ -1,49 +1,46 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import $ from "jquery";
-import "datatables.net-bs5";
-import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
 
-  // Ambil data dari API
+  // ambil data
   const fetchProducts = async () => {
     const res = await fetch("https://api.roniprsty.com/produk/read.php");
     const data = await res.json();
     setProducts(data);
   };
 
-  // Load data saat awal
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  // Inisialisasi DataTable setiap kali data berubah
   useEffect(() => {
-    if (products.length > 0) {
-      if ($.fn.dataTable.isDataTable("#productTable")) {
-        $("#productTable").DataTable().destroy();
-      }
-      $("#productTable").DataTable();
+    if (products.length > 0 && typeof window !== "undefined") {
+      const $ = (window as any).$;
+
+      setTimeout(() => {
+        if ($.fn.dataTable.isDataTable("#productTable")) {
+          $("#productTable").DataTable().destroy();
+        }
+        $("#productTable").DataTable();
+      }, 50);
     }
   }, [products]);
 
-  // Delete produk
   const handleDelete = async (id: string) => {
     if (!confirm("Yakin ingin menghapus data ini?")) return;
 
     await fetch(`https://api.roniprsty.com/produk/delete.php?id=${id}`);
 
-    // Hilangkan baris secara instan (tanpa reload)
+    const $ = (window as any).$;
     $("#productTable")
       .DataTable()
       .row($(`button[data-id="${id}"]`).parents("tr"))
       .remove()
       .draw();
 
-    // Sync ulang ke API biar data valid
     fetchProducts();
   };
 
@@ -51,11 +48,9 @@ export default function ProductsPage() {
     <div className="container mt-4">
       <h1>Daftar Produk</h1>
 
-      <div className="d-flex justify-content-end mb-3">
-        <a href="/products/add" className="btn btn-primary">
-          + Add Product
-        </a>
-      </div>
+      <a href="/products/add" className="btn btn-primary mb-3">
+        + Add Product
+      </a>
 
       <table id="productTable" className="table table-striped">
         <thead className="table-dark">
@@ -69,7 +64,6 @@ export default function ProductsPage() {
             <th>Aksi</th>
           </tr>
         </thead>
-
         <tbody>
           {products.map((p: any) => (
             <tr key={p.id}>
@@ -92,8 +86,8 @@ export default function ProductsPage() {
               <td>
                 <button
                   data-id={p.id}
-                  onClick={() => handleDelete(p.id)}
                   className="btn btn-danger btn-sm me-2"
+                  onClick={() => handleDelete(p.id)}
                 >
                   Hapus
                 </button>
